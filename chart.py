@@ -1,14 +1,15 @@
 import datetime
 
 import matplotlib as mpl
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-import matplotlib.dates as mdates
 import matplotlib.transforms as mtransforms
-from matplotlib.dates import SU
-from chart_formatter import DataFormatter, DatePositionFormatter, TopFormatter
 import numpy as np
 import pandas as pd
+from matplotlib.dates import SU
+
+from chart_formatter import DataFormatter, DatePositionFormatter, TopFormatter
 
 
 def plot(data, cel_visible=True, bounce_visible=False):

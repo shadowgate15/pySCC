@@ -1,8 +1,5 @@
-from matplotlib import ticker, dates
-import datetime
+from matplotlib import ticker
 from matplotlib.dates import num2date, SEC_PER_DAY
-
-import numpy as np
 
 
 class DateFormatter(ticker.Formatter):

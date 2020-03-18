@@ -1,6 +1,7 @@
-import pandas as pd
-import numpy as np
 import re
+
+import numpy as np
+import pandas as pd
 from scipy import stats as sci_stats
 from sklearn.linear_model import LinearRegression
 
