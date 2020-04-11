@@ -89,7 +89,7 @@ def within_condition_stats(data):
 
         # linear regression
         regressor = LinearRegression()
-        regressor.fit(X, Y)
+        regressor.fit(X[:11], Y[:11])
 
         predict = regressor.predict(X)
 
