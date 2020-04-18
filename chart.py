@@ -38,7 +38,7 @@ class SCC:
         :param ylim: size of the limit on the y-axis.
         :type ylim: tuple
         """
-        self.data = data
+        self.data = data.copy()
         self.colors = colors
         self.markers = markers
         self.phase_lines = phase_lines
@@ -48,6 +48,11 @@ class SCC:
         self.ax_top = self.ax_data.twiny()
         # figure attributes
         self.ylim = ylim
+
+        # class wide absolutes
+        self.fontproperties = self.ax_data.xaxis.get_label().get_fontproperties()
+        self.ticklabelpad = mpl.rcParams['xtick.major.pad']
+
 
     @property
     def data(self):
@@ -63,8 +68,11 @@ class SCC:
         elif df.eq(0).any().any():
             raise ValueError('SCC.data cannot contain zeros.')
 
+        df = df.copy()
+        self.start_date = df.index[0] - datetime.timedelta(days=df.index[0].weekday() + 1)
+        df.loc[self.start_date] = 0.0
+        df.sort_index(inplace=True)
         self.__data = df.resample('D').sum().replace(0.0, np.nan)
-
 
     @property
     def colors(self):
@@ -128,26 +136,22 @@ class SCC:
 
         # TODO plot celeration line
 
-        # TODO add phase change lines
-        max = self.data.max().max()
-        min = self.data.min().min()
-
-        fontproperties = self.ax_data.xaxis.get_label().get_fontproperties()
         for date, label in self.phase_lines.items():
-            # date = mdates.datestr2num(date)
+            an = self.ax_data.annotate('',
+                                       xy=(date, self.ylim[0]), xycoords='data',
+                                       xytext=(date, self.ylim[1]), textcoords='data',
+                                       fontproperties=self.fontproperties,
+                                       arrowprops=dict(arrowstyle='-', connectionstyle='angle', relpos=(0., 1.)))
             self.ax_data.annotate(label,
-                                  xy=(date, min), xycoords='data',
-                                  xytext=(date, max), textcoords='data', ha='left',
-                                  arrowprops=dict(arrowstyle='-', connectionstyle='angle'))
+                                  xy=(1., 1.), xycoords=an,
+                                  xytext=(0., -self.ticklabelpad), textcoords='offset points',
+                                  rotation=-90, va='top',
+                                  fontproperties=self.fontproperties)
 
         self.__format_fig()
         plt.show()
 
     def __format_fig(self):
-        # set start date of chart
-        start_date = self.data.index[0] - datetime.timedelta(days=self.data.index[0].weekday() + 1)
-        ticklabelpad = mpl.rcParams['xtick.major.pad']
-
         # set overall variables
         self.ax_data.grid(b=True, which='both', axis='both')  # make grid visible
         self.ax_data.set(xlabel='SUCCESSIVE CALENDAR DAYS',
@@ -174,8 +178,8 @@ class SCC:
         # bottom x axis
         self.ax_data.xaxis.label.set_color('#3498db')
         self.ax_data.xaxis.label.set_size('large')
-        self.ax_data.set_xlim(np.datetime64(start_date),
-                              np.datetime64(start_date + datetime.timedelta(days=140)))     # FEATURE GH-4 Scaling y-axis
+        self.ax_data.set_xlim(np.datetime64(self.start_date),
+                              np.datetime64(self.start_date + datetime.timedelta(days=140)))     # FEATURE GH-4 Scaling y-axis
 
         # FEATURE GH-6 different types of charts
         self.ax_data.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=SU))
@@ -248,19 +252,18 @@ class SCC:
         for element in self.ax_counting.yaxis.get_minorticklabels() + self.ax_counting.yaxis.get_minorticklines():
             element.set_transform(element.get_transform() + offset)
 
-        fontproperties = self.ax_counting.yaxis.get_label().get_fontproperties()
         label = self.ax_counting.get_ymajorticklabels()[0]
         self.ax_counting.annotate('COUNTING TIMES',
                                   xy=(0., 0.), xycoords=label,  # 'axes fraction',
-                                  xytext=(ticklabelpad, 30.), textcoords='offset points',
+                                  xytext=(self.ticklabelpad, 30.), textcoords='offset points',
                                   color='#3498db', size='small',
                                   va='bottom', rotation=90.,
-                                  fontproperties=fontproperties)
+                                  fontproperties=self.fontproperties)
 
         # top x axis
         self.ax_top.set_zorder(3.0)
-        self.ax_top.set_xlim(np.datetime64(start_date),
-                             np.datetime64(start_date + datetime.timedelta(days=140)))
+        self.ax_top.set_xlim(np.datetime64(self.start_date),
+                             np.datetime64(self.start_date + datetime.timedelta(days=140)))
 
         self.ax_top.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=SU))
         self.ax_top.xaxis.set_minor_locator(mdates.DayLocator())
@@ -275,39 +278,38 @@ class SCC:
                                 length=0.,
                                 colors='#3498db')
 
-        fontproperties = self.ax_top.xaxis.get_label().get_fontproperties()
         for pos, x in enumerate(self.ax_top.get_xticks()):
             if pos % 4 == 0:
                 if pos == 4:
                     self.ax_top.annotate('SUCCESSIVE',
                                          xy=(x, 1), xycoords=('data', 'axes fraction'),
-                                         xytext=(25, ticklabelpad + 10), textcoords='offset points',
+                                         xytext=(25, self.ticklabelpad + 10), textcoords='offset points',
                                          va='center', size='large', color='#3498db',
-                                         fontproperties=fontproperties)
+                                         fontproperties=self.fontproperties)
                 elif pos == 8:
                     self.ax_top.annotate('CALENDAR',
                                          xy=(x, 1), xycoords=('data', 'axes fraction'),
-                                         xytext=(25, ticklabelpad + 10), textcoords='offset points',
+                                         xytext=(25, self.ticklabelpad + 10), textcoords='offset points',
                                          va='center', size='large', color='#3498db',
-                                         fontproperties=fontproperties)
+                                         fontproperties=self.fontproperties)
                 elif pos == 12:
                     self.ax_top.annotate('WEEKS',
                                          xy=(x, 1), xycoords=('data', 'axes fraction'),
-                                         xytext=(25, ticklabelpad + 10), textcoords='offset points',
+                                         xytext=(25, self.ticklabelpad + 10), textcoords='offset points',
                                          va='center', size='large', color='#3498db',
-                                         fontproperties=fontproperties)
+                                         fontproperties=self.fontproperties)
 
                 an = self.ax_top.annotate('',
                                           xy=(x, 1), xycoords=('data', 'axes fraction'),
-                                          xytext=(ticklabelpad + 60, 40), textcoords='offset points',
+                                          xytext=(self.ticklabelpad + 60, 40), textcoords='offset points',
                                           arrowprops=dict(arrowstyle='-', shrinkB=25,
                                                           color='#3498db',
                                                           connectionstyle="angle,angleA=0,angleB=90"), )
                 self.ax_top.annotate(mdates.num2date(x).strftime('%m/%d/%Y'),
                                      xy=(1., 1.), xycoords=an,
-                                     xytext=(-ticklabelpad, 1.), textcoords='offset points',
+                                     xytext=(-self.ticklabelpad, 1.), textcoords='offset points',
                                      ha='right', va='bottom', size='medium',
-                                     fontproperties=fontproperties)
+                                     fontproperties=self.fontproperties)
 
         # set frame color
         for ax, color in zip([self.ax_data, self.ax_counting, self.ax_top], ['#3498db', '#3498db', '#3498db', '#3498db']):
